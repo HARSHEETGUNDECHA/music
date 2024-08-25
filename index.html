@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c2c2c;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .upload-container {
+            margin: 20px 0;
+        }
+
+        #file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background-color: #444;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #4CAF50;
+        }
+
+        .error {
+            background-color: #f44336;
+        }
+
+        .info {
+            background-color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Upload Files to Firebase</h1>
+
+    <div class="upload-container">
+        <input type="file" id="file-upload" multiple>
+        <button onclick="uploadFiles()">Upload</button>
+    </div>
+
+    <div id="message" style="display: none;"></div>
+
+    <h2>Uploaded Files</h2>
+    <div id="file-list"></div>
+    <!-- Audio Player Section -->
+<div id="audio-player" style="display:none;">
+    <h3>Now Playing:</h3>
+    <audio id="player" controls>
+        Your browser does not support the audio element.
+    </audio>
+</div>
+
+<!-- File Upload Section (already existing) -->
+<input type="file" id="file-upload" multiple />
+<button onclick="uploadFiles()">Upload</button>
+
+<!-- Message Display -->
+<div id="message" style="display:none;"></div>
+
+<!-- File List Display -->
+<div id="file-list"></div>
+
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js"></script>
+
+    <!-- Your Firebase config -->
+    <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+<script>
+    // Your Firebase config
+    var firebaseConfig = {
+        apiKey: "AIzaSyD_5AjK10O3EV7ABphlf_G3hvySe_ThcuA",
+  authDomain: "study-9fff4.firebaseapp.com",
+  projectId: "study-9fff4",
+  storageBucket: "study-9fff4.appspot.com",
+  messagingSenderId: "162885368635",
+  appId: "1:162885368635:web:ca7bd19f974672764ad51e",
+  measurementId: "G-W4XGMJ6B3L"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var storage = firebase.storage();
+
+    function showMessage(text, type) {
+        var messageDiv = document.getElementById('message');
+        messageDiv.innerText = text;
+        messageDiv.className = type;
+        messageDiv.style.display = 'block';
+    }
+
+    function uploadFiles() {
+        var fileUpload = document.getElementById('file-upload');
+        var files = fileUpload.files;
+
+        if (files.length === 0) {
+            showMessage('No files selected for upload.', 'error');
+            return;
+        }
+
+        showMessage('Uploading files, please wait...', 'info');
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var storageRef = storage.ref('uploads/' + file.name);
+            storageRef.put(file).then(function() {
+                showMessage('Successfully uploaded: ' + file.name, 'success');
+                displayFiles();
+            }).catch(function(error) {
+                console.error('Upload failed:', error);
+                showMessage('Failed to upload ' + file.name + ': ' + error.message, 'error');
+            });
+        }
+    }
+
+    function displayFiles() {
+        var fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+
+        var storageRef = storage.ref('uploads');
+        storageRef.listAll().then(function(result) {
+            if (result.items.length === 0) {
+                fileList.innerHTML = '<p>No files found.</p>';
+            }
+
+            result.items.forEach(function(itemRef) {
+                itemRef.getDownloadURL().then(function(url) {
+                    var div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.innerHTML = '<a href="' + url + '" target="_blank">' + itemRef.name + '</a>';
+                    fileList.appendChild(div);
+                }).catch(function(error) {
+                    console.error('Failed to retrieve file:', error);
+                    showMessage('Failed to retrieve file: ' + error.message, 'error');
+                });
+            });
+        }).catch(function(error) {
+            console.error('Failed to list files:', error);
+            showMessage('Failed to list files: ' + error.message, 'error');
+        });
+    }
+
+    // Display files on page load
+    window.onload = displayFiles;
+    function displayFiles() {
+    var fileList = document.getElementById('file-list');
+    fileList.innerHTML = '';
+
+    var storageRef = storage.ref('uploads');
+    storageRef.listAll().then(function(result) {
+        if (result.items.length === 0) {
+            fileList.innerHTML = '<p>No files found.</p>';
+        }
+
+        result.items.forEach(function(itemRef) {
+            itemRef.getDownloadURL().then(function(url) {
+                var div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `<a href="${url}" target="_blank">${itemRef.name}</a>`;
+
+                // Check if the file is an audio file
+                if (itemRef.name.match(/\.(mp3|wav|ogg)$/i)) {
+                    var playButton = document.createElement('button');
+                    playButton.innerText = 'Play';
+                    playButton.onclick = function() {
+                        playAudio(url, itemRef.name);
+                    };
+                    div.appendChild(playButton);
+                }
+
+                fileList.appendChild(div);
+            }).catch(function(error) {
+                console.error('Failed to retrieve file:', error);
+                showMessage('Failed to retrieve file: ' + error.message, 'error');
+            });
+        });
+    }).catch(function(error) {
+        console.error('Failed to list files:', error);
+        showMessage('Failed to list files: ' + error.message, 'error');
+    });
+}
+
+function playAudio(url, fileName) {
+    var audioPlayerDiv = document.getElementById('audio-player');
+    var player = document.getElementById('player');
+    var nowPlaying = document.querySelector('#audio-player h3');
+
+    nowPlaying.innerText = `Now Playing: ${fileName}`;
+    player.src = url;
+    player.play();
+
+    audioPlayerDiv.style.display = 'block';
+}
+
+</script>
+
+
+</body>
+</html>
